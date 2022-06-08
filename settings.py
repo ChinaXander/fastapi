@@ -43,6 +43,10 @@ auth = [
     'eBb5M2IDXhSJIj17EYVdr2cf5YifImKT1'
 ]
 
+doc = {
+    "title": "TAOIC数据匹配系统"
+}
+
 try:
     # 导入测试配置
     from settings_test import *

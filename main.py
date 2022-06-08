@@ -10,11 +10,12 @@ from fastapi.openapi.docs import (
 from routers import product
 from settings import start_run
 from tools import res_data
+from settings import doc
 
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-app = FastAPI(docs_url=None, redoc_url=None)
+app = FastAPI(title=doc['title'], docs_url=None, redoc_url=None)
 
 app.include_router(product.router)
 
@@ -36,7 +37,8 @@ async def root():
 async def custom_swagger_ui_html():
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,
-        title=app.title + " - Swagger UI",
+        # title=app.title + " - Swagger UI",
+        title=doc['title'],
         oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
         swagger_js_url="/static/swagger-ui/swagger-ui-bundle.js",
         swagger_css_url="/static/swagger-ui/swagger-ui.css",
