@@ -10,12 +10,16 @@ import tools
 from data.database import Db
 import data.digikey.details as digikeydetails
 import data.mouser.details as mouserdetails
+from fastapi import Query
 
 
-def get_product_details(model: str):
-    result = Digikey().get_details(model)
+def get_product_details(
+        model: str = Query(description="型号"),
+        brand: str = Query(description="品牌")
+):
+    result = Digikey().get_details(model, brand)
     if not result or not result.pdfpath:
-        MouserData = Mouser().get_details(model)
+        MouserData = Mouser().get_details(model, brand)
         if MouserData and MouserData.pdfpath:
             result = MouserData
         else:
@@ -28,15 +32,16 @@ def get_product_details(model: str):
         result.pdf_raw = f"{settings.alioss['upload_url']}/{settings.alioss['image_prefix']}/{result.pdfpath}"
     else:
         result.pdfimage = list()
+        result.pdf_raw = ''
 
     return result
 
 
 class Digikey:
-    def get_details(self, model: str):
-        return Db.query(digikeydetails.Details).filter(digikeydetails.Details.model == model).first()
+    def get_details(self, model: str, brand: str):
+        return Db.query(digikeydetails.Details).filter(digikeydetails.Details.model == model).filter(digikeydetails.Details.brand == brand).first()
 
 
 class Mouser:
-    def get_details(self, model: str):
-        return Db.query(mouserdetails.Details).filter(mouserdetails.Details.model == model).first()
+    def get_details(self, model: str, brand: str):
+        return Db.query(mouserdetails.Details).filter(mouserdetails.Details.model == model).filter(mouserdetails.Details.brand == brand).first()

@@ -15,6 +15,6 @@ router = APIRouter(
 )
 
 
-@router.get("/details", responses={201: {"description": "product not find"}})
+@router.get("/details", responses={201: {"description": "product not find"}}, description='元器件匹配')
 def get_details(details: dict = Depends(crud.get_product_details)):
     return tools.res_data(details)

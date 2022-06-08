@@ -108,7 +108,7 @@ def upload_oss(files, file_name):
     return True
 
 
-async def token_verify(Authorization_token: Union[str, None] = Header(default=None)):
+async def token_verify(Authorization_token: Union[str, None] = Header(default=None, description="token")):
     try:
         settings.auth.index(Authorization_token)
     except Exception as e:

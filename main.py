@@ -15,7 +15,12 @@ from settings import doc
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-app = FastAPI(title=doc['title'], docs_url=None, redoc_url=None)
+app = FastAPI(
+    title=doc['title'],
+    version="1.0.0",
+    docs_url=None,
+    redoc_url=None
+)
 
 app.include_router(product.router)
 
