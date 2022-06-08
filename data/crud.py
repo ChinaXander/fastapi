@@ -3,6 +3,8 @@
 @author         :XDS
 @Description    :
 """
+from fastapi import HTTPException
+
 import settings
 import tools
 from data.database import Db
@@ -12,11 +14,12 @@ import data.mouser.details as mouserdetails
 
 def get_product_details(model: str):
     result = Digikey().get_details(model)
-    print(result)
     if not result or not result.pdfpath:
         MouserData = Mouser().get_details(model)
-        if MouserData.pdfpath:
+        if MouserData and MouserData.pdfpath:
             result = MouserData
+        else:
+            raise HTTPException(status_code=201, detail="product not find")
 
     # 获取图片
     if result and result.pdfpath:

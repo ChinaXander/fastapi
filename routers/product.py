@@ -4,12 +4,17 @@
 @Description    :
 """
 from fastapi import APIRouter, Depends
+
 import tools
 from data import crud
 
-router = APIRouter(prefix="/product")
+router = APIRouter(
+    prefix="/product",
+    dependencies=[Depends(tools.token_verify)],
+    responses={400: {"description": "authentication failed"}}
+)
 
 
-@router.get("/details/{model}")
+@router.get("/details", responses={201: {"description": "product not find"}})
 def get_details(details: dict = Depends(crud.get_product_details)):
     return tools.res_data(details)

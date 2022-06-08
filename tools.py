@@ -4,9 +4,13 @@
 @Description    :
 """
 import json
+from typing import Union
+
 import fitz
 import os
 import requests
+from fastapi import Header, HTTPException
+
 import settings
 from loguru import logger
 
@@ -102,6 +106,13 @@ def upload_oss(files, file_name):
 
     logger.info(f"上传oss成功 ===>>> {form_data['key']}")
     return True
+
+
+async def token_verify(Authorization_token: Union[str, None] = Header(default=None)):
+    try:
+        settings.auth.index(Authorization_token)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="authentication failed")
 
 
 def res_data(data, code: int = 200, msg: str = 'success'):

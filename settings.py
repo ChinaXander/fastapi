@@ -39,6 +39,10 @@ if not os.path.exists(pdfs_dir):
 if not os.path.exists(images_dir):
     os.makedirs(images_dir)
 
+auth = [
+    'eBb5M2IDXhSJIj17EYVdr2cf5YifImKT1'
+]
+
 try:
     # 导入测试配置
     from settings_test import *
