@@ -48,12 +48,16 @@ def get_details_fulltest(
         limit: int = 10
 ):
     try:
-        digikeyres = Db.query(digikeydetails.Details).filter(text(f" match(`model`) against('{model}')"))
-        mouserres = Db.query(mouserdetails.Details).filter(text(f" match(`model`) against('{model}')"))
+        digikeyres = Db.query(digikeydetails.Details).filter(text(f" match(`model`) against('{model}' IN BOOLEAN MODE)"))
+        mouserres = Db.query(mouserdetails.Details).filter(text(f" match(`model`) against('{model}' IN BOOLEAN MODE)"))
         if brand:
             digikeyres = digikeyres.filter(digikeydetails.Details.brand == brand)
             mouserres = mouserres.filter(mouserdetails.Details.brand == brand)
-        return digikeyres.union(mouserres).offset((page - 1) * limit).limit(limit).all()
+
+        res = digikeyres.union(mouserres)
+        # logger.info(f"sql:{res.except_all()}")
+        # logger.info(Db.query(res.exists()))
+        return res.offset((page - 1) * limit).limit(limit).all()
     except Exception as e:
         logger.warning('model全文索引查询失败：' + str(e))
         return None
