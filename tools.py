@@ -17,7 +17,7 @@ from fastapi import Header, HTTPException
 from loguru import logger
 
 
-def pdf_image(pdf_url: str, imagename: str, start: int = 0, num: int = 10):
+def pdf_image(pdf_url: str, imagename: str, start: int = 0, num: int = 5):
     """
     pdf转images
     :param pdf_url:
