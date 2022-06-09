@@ -4,14 +4,16 @@
 @Description    :
 """
 import json
-from typing import Union
+import queue
+import threading
+from time import sleep
 
 import fitz
 import os
 import requests
-from fastapi import Header, HTTPException
-
 import settings
+
+from fastapi import Header, HTTPException
 from loguru import logger
 
 
@@ -26,10 +28,7 @@ def pdf_image(pdf_url: str, imagename: str, start: int = 0, num: int = 10):
     """
     image_list = list()
 
-    pdfs_dir = settings.pdfs_dir  # pdf保存目录
-    pdf_file = f"{pdfs_dir}{pdf_url}"  # pdf文件路径
-    if not os.path.exists(pdfs_dir):
-        os.mkdir(pdfs_dir)
+    pdf_file = f"{settings.pdfs_dir}{pdf_url}"  # pdf文件路径
 
     images_dir = settings.images_dir + imagename  # images保存目录
     if not os.path.exists(images_dir):
@@ -55,23 +54,43 @@ def pdf_image(pdf_url: str, imagename: str, start: int = 0, num: int = 10):
         end = len(doc)
 
     # 保存图片
+    oss_setting = None
     for pg in range(start, end):
         image_list.append(f"{settings.alioss['upload_url']}/{settings.alioss['image_prefix']}/{imagename}-{str(pg)}.jpg")
 
         if not os.path.isfile(f"{images_dir}/{imagename}-{str(pg)}.jpg"):
             pm = doc[pg].get_pixmap(alpha=False)
             pm.save(f"{images_dir}/{imagename}-{str(pg)}.jpg")
+
+            # 获取oss上传参数
+            if not oss_setting:
+                response = requests.get(settings.alioss['get_params_url'])
+                if response.status_code == 200:
+                    oss_setting = json.loads(response.text)
+
             # 上传oss
-            upload_oss({'file': ('product/image', open(f"{settings.images_dir}{imagename}/{imagename}-{str(pg)}.jpg", 'rb'), 'image/jpeg')}, f"{imagename}-{str(pg)}.jpg")
+            q.put({
+                "files": {'file': ('product/image', open(f"{settings.images_dir}{imagename}/{imagename}-{str(pg)}.jpg", 'rb'), 'image/jpeg')},
+                "file_names": f"{imagename}-{str(pg)}.jpg",
+                "oss_setting": oss_setting
+            })
+            # q.put({"files": imagename, "file_names": pg, "oss_setting": oss_setting})
+            # upload_oss({'file': ('product/image', open(f"{settings.images_dir}{imagename}/{imagename}-{str(pg)}.jpg", 'rb'), 'image/jpeg')}, f"{imagename}-{str(pg)}.jpg")
 
     doc.close()
+
+    logger.debug(f"线程数：{len(threading.enumerate())}")
+    if not upload_oss_thread.is_alive() and oss_setting:
+        logger.debug(f"线程开始===>>>{upload_oss_thread.name}")
+        upload_oss_thread.start()
 
     return image_list
 
 
-def upload_oss(files, file_name):
+def upload_oss(files, file_name, oss_setting):
     """
     上传图片到oss 图片只能上传jpg
+    :param oss_setting:
     :param files: 格式
     {'file': ('product/image', open('./download/image/test.jpg', 'rb'), 'image/jpeg')}
     {'file': ('product/pdf', open('./download/pdf/test.pdf', 'rb'), 'application/pdf')}
@@ -81,11 +100,12 @@ def upload_oss(files, file_name):
     # if requests.get(f"{config.alioss['upload_url']}/{config.alioss['image_prefix']}/{file_name}").status_code == 200:
     #     return True
 
-    # 获取oss上传参数
-    response = requests.get(settings.alioss['get_params_url'])
-    if response.status_code != 200:
+    # sleep(1)
+    # logger.debug(f"上传oss成功 ===>>> {files}-{file_name}")
+    # return False
+
+    if not oss_setting:
         return False
-    oss_setting = json.loads(response.text)
 
     form_data = {
         'key': f'{settings.alioss["image_prefix"]}/{file_name}',
@@ -104,11 +124,11 @@ def upload_oss(files, file_name):
         logger.error(f"上传oss失败 ===>>> [error]{e} [data]{form_data}")
         return False
 
-    logger.info(f"上传oss成功 ===>>> {form_data['key']}")
+    logger.debug(f"上传oss成功 ===>>> {form_data['key']}")
     return True
 
 
-async def token_verify(Authorization_token: Union[str, None] = Header(default=None, description="token")):
+async def token_verify(Authorization_token: str = Header(description="token")):
     try:
         settings.auth.index(Authorization_token)
     except Exception as e:
@@ -117,3 +137,17 @@ async def token_verify(Authorization_token: Union[str, None] = Header(default=No
 
 def res_data(data, code: int = 200, msg: str = 'success'):
     return {'code': code, 'msg': msg, 'data': data}
+
+
+class UploadOssTask(threading.Thread):
+    def run(self):
+        while not q.empty():
+            re = q.get()
+            upload_oss(re['files'], re['file_names'], re['oss_setting'])
+        else:
+            logger.debug(f"线程结束===>>>{self.name}")
+            self.__init__(name='aliyun_oss')
+
+
+upload_oss_thread = UploadOssTask(name='aliyun_oss')
+q = queue.Queue()

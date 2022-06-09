@@ -17,7 +17,7 @@ start_run = dict(
 )
 
 # 记录日志
-logger.add(f'./log/{datetime.datetime.now().strftime("%Y%m")}.log', level='INFO', rotation='00:00')
+logger.add(f'./log/{datetime.datetime.now().strftime("%Y%m")}.log', level='INFO', rotation='100MB', enqueue=True)
 
 # mysql数据库链接地址
 mysql_url = 'mysql+pymysql://root:mysql@192.168.0.224:3306/my_db?charset=utf8'

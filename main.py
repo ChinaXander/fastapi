@@ -7,6 +7,7 @@ from fastapi.openapi.docs import (
     get_swagger_ui_oauth2_redirect_html,
 )
 
+import tools
 from routers import product
 from settings import start_run
 from tools import res_data
@@ -62,11 +63,6 @@ async def redoc_html():
         title=app.title + " - ReDoc",
         redoc_js_url="/static/redoc.standalone.js",
     )
-
-
-# @app.get("/showImage/{path}", response_class=FileResponse)
-# def show_image(path: str):
-#     return config.images_dir + path
 
 
 if __name__ == "__main__":

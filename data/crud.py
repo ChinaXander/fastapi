@@ -4,6 +4,7 @@
 @Description    :
 """
 from fastapi import HTTPException
+from sqlalchemy import text
 
 import settings
 import tools
@@ -12,23 +13,20 @@ import data.digikey.details as digikeydetails
 import data.mouser.details as mouserdetails
 from fastapi import Query
 from typing import Union
+from loguru import logger
 
 
 def get_product_details(
-        model: str = Query(description="型号"),
-        brand: Union[str, None] = Query(None, description="型号")
+        model: str = Query(description="型号", min_length=2),
+        brand: Union[str, None] = Query(None, description="型号"),
+        page: Union[int, None] = Query(1, description="分页"),
+        limit: Union[int, None] = Query(10, description="数量")
 ):
-    DigikeyData = Digikey().get_details(model, brand)
-    MouserData = Mouser().get_details(model, brand)
-
-    if DigikeyData and MouserData:
-        result = DigikeyData + MouserData
-    elif DigikeyData:
-        result = DigikeyData
-    elif MouserData:
-        result = MouserData
-    else:
-        raise HTTPException(status_code=201, detail="product not find")
+    result = get_details(model, brand, page, limit)
+    if not result:
+        result = get_details_fulltest(model, brand, page, limit)
+        if not result:
+            raise HTTPException(status_code=201, detail="product not find")
 
     for value in result:
         # 获取图片
@@ -43,19 +41,34 @@ def get_product_details(
     return result
 
 
-class Digikey:
-    def get_details(self, model: str, brand: Union[str, None] = None):
-        # res = None
-        res = Db.query(digikeydetails.Details).filter(digikeydetails.Details.model == model)
+def get_details_fulltest(
+        model: str,
+        brand: Union[str, None] = None,
+        page: int = 1,
+        limit: int = 10
+):
+    try:
+        digikeyres = Db.query(digikeydetails.Details).filter(text(f" match(`model`) against('{model}')"))
+        mouserres = Db.query(mouserdetails.Details).filter(text(f" match(`model`) against('{model}')"))
         if brand:
-            res = res.filter(digikeydetails.Details.brand == brand)
-        return res.all()
+            digikeyres = digikeyres.filter(digikeydetails.Details.brand == brand)
+            mouserres = mouserres.filter(mouserdetails.Details.brand == brand)
+        return digikeyres.union(mouserres).offset((page - 1) * limit).limit(limit).all()
+    except Exception as e:
+        logger.warning('model全文索引查询失败：' + str(e))
+        return None
 
 
-class Mouser:
-    def get_details(self, model: str, brand: Union[str, None] = None):
-        # res = None
-        res = Db.query(mouserdetails.Details).filter(mouserdetails.Details.model == model)
-        if brand:
-            res = res.filter(mouserdetails.Details.brand == brand)
-        return res.all()
+def get_details(
+        model: str,
+        brand: Union[str, None] = None,
+        page: int = 1,
+        limit: int = 10
+):
+    digikeyres = Db.query(digikeydetails.Details).filter(digikeydetails.Details.model == model)
+    mouserres = Db.query(mouserdetails.Details).filter(mouserdetails.Details.model == model)
+    if brand:
+        digikeyres = digikeyres.filter(digikeydetails.Details.brand == brand)
+        mouserres = mouserres.filter(mouserdetails.Details.brand == brand)
+
+    return digikeyres.union(mouserres).offset((page - 1) * limit).limit(limit).all()
