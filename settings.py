@@ -44,7 +44,8 @@ auth = [
 ]
 
 doc = {
-    "title": "TAOIC数据匹配系统"
+    "title": "TAOIC数据匹配系统",
+    "version": "1.0.0"
 }
 
 try:

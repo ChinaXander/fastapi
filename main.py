@@ -7,7 +7,6 @@ from fastapi.openapi.docs import (
     get_swagger_ui_oauth2_redirect_html,
 )
 
-import tools
 from routers import product
 from settings import start_run
 from tools import res_data
@@ -18,7 +17,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 app = FastAPI(
     title=doc['title'],
-    version="1.0.0",
+    version=doc['version'],
     docs_url=None,
     redoc_url=None
 )
@@ -36,15 +35,15 @@ async def http_exception_handler(request, exc):
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return "TAOIC API 1.0"
+    return doc['title'] + doc['version']
 
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,
-        # title=app.title + " - Swagger UI",
-        title=doc['title'],
+        title=app.title + " - Swagger UI",
+        # title=doc['title'],
         oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
         swagger_js_url="/static/swagger-ui/swagger-ui-bundle.js",
         swagger_css_url="/static/swagger-ui/swagger-ui.css",
