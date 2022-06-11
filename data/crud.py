@@ -39,7 +39,7 @@ def get_product_details(
                 value.pdfimage = list()
                 value.pdf_raw = ''
     except Exception as e:
-        logger.error('产品查询失败' + str(e))
+        logger.error('产品查询失败' + str(e) + ' [model]==>>' + model)
         return None
 
     return result
