@@ -7,6 +7,7 @@ import json
 import queue
 import threading
 from time import sleep
+from typing import Union
 
 import fitz
 import os
@@ -128,7 +129,7 @@ def upload_oss(files, file_name, oss_setting):
     return True
 
 
-async def token_verify(Authorization_token: str = Header(description="token")):
+async def token_verify(Authorization_token: Union[str, None] = Header(None, description="token")):
     try:
         settings.auth.index(Authorization_token)
     except Exception as e:

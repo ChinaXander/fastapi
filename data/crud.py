@@ -3,6 +3,8 @@
 @author         :XDS
 @Description    :
 """
+import datetime
+
 from fastapi import HTTPException
 from sqlalchemy import text
 
@@ -22,12 +24,13 @@ def get_product_details(
         page: Union[int, None] = Query(1, description="分页"),
         limit: Union[int, None] = Query(10, description="数量")
 ):
+    start_time = datetime.datetime.now()
     try:
         result = get_details(model, brand, page, limit)
         if not result:
             result = get_details_fulltest(model, brand, page, limit)
             if not result:
-                raise HTTPException(status_code=201, detail="product not find")
+                raise Exception('产品查询失败')
 
         for value in result:
             # 获取图片
@@ -39,8 +42,9 @@ def get_product_details(
                 value.pdfimage = list()
                 value.pdf_raw = ''
     except Exception as e:
-        logger.error('产品查询失败' + str(e) + ' [model]==>>' + model)
-        return None
+        end_time = datetime.datetime.now()
+        logger.error(str(e) + ' [model]==>>' + model + ' [execute] ==>> ' + str(end_time - start_time))
+        raise HTTPException(status_code=201, detail="product not find")
 
     return result
 
