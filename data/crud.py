@@ -22,21 +22,25 @@ def get_product_details(
         page: Union[int, None] = Query(1, description="分页"),
         limit: Union[int, None] = Query(10, description="数量")
 ):
-    result = get_details(model, brand, page, limit)
-    if not result:
-        result = get_details_fulltest(model, brand, page, limit)
+    try:
+        result = get_details(model, brand, page, limit)
         if not result:
-            raise HTTPException(status_code=201, detail="product not find")
+            result = get_details_fulltest(model, brand, page, limit)
+            if not result:
+                raise HTTPException(status_code=201, detail="product not find")
 
-    for value in result:
-        # 获取图片
-        if value.pdfpath:
-            pdfname = value.pdfpath.split('.')[0]
-            value.pdf_image = tools.pdf_image(value.pdfpath, pdfname)
-            value.pdf_raw = f"{settings.alioss['upload_url']}/{settings.alioss['image_prefix']}/{value.pdfpath}"
-        else:
-            value.pdfimage = list()
-            value.pdf_raw = ''
+        for value in result:
+            # 获取图片
+            if value.pdfpath:
+                pdfname = value.pdfpath.split('.')[0]
+                value.pdf_image = tools.pdf_image(value.pdfpath, pdfname)
+                value.pdf_raw = f"{settings.alioss['upload_url']}/{settings.alioss['pdf_prefix']}/{value.pdfpath}"
+            else:
+                value.pdfimage = list()
+                value.pdf_raw = ''
+    except Exception as e:
+        logger.error('产品查询失败' + str(e))
+        return None
 
     return result
 
@@ -48,8 +52,8 @@ def get_details_fulltest(
         limit: int = 10
 ):
     try:
-        digikeyres = Db.query(digikeydetails.Details).filter(text(f" match(`model`) against('\"{model}\"' IN BOOLEAN MODE)"))
-        mouserres = Db.query(mouserdetails.Details).filter(text(f" match(`model`) against('\"{model}\"' IN BOOLEAN MODE)"))
+        digikeyres = Db().query(digikeydetails.Details).filter(text(f" match(`model`) against('\"{model}\"' IN BOOLEAN MODE)"))
+        mouserres = Db().query(mouserdetails.Details).filter(text(f" match(`model`) against('\"{model}\"' IN BOOLEAN MODE)"))
         if brand:
             digikeyres = digikeyres.filter(digikeydetails.Details.brand == brand)
             mouserres = mouserres.filter(mouserdetails.Details.brand == brand)
@@ -57,7 +61,7 @@ def get_details_fulltest(
         res = digikeyres.union(mouserres)
 
         # logger.info(f"sql:{digikeyIs}")
-        # logger.info(Db.query(res.exists()))
+        # logger.info(Db().query(res.exists()))
         return res.offset((page - 1) * limit).limit(limit).all()
     except Exception as e:
         logger.warning('model全文索引查询失败：' + str(e))
@@ -70,8 +74,8 @@ def get_details(
         page: int = 1,
         limit: int = 10
 ):
-    digikeyres = Db.query(digikeydetails.Details).filter(digikeydetails.Details.model == model)
-    mouserres = Db.query(mouserdetails.Details).filter(mouserdetails.Details.model == model)
+    digikeyres = Db().query(digikeydetails.Details).filter(digikeydetails.Details.model == model)
+    mouserres = Db().query(mouserdetails.Details).filter(mouserdetails.Details.model == model)
     if brand:
         digikeyres = digikeyres.filter(digikeydetails.Details.brand == brand)
         mouserres = mouserres.filter(mouserdetails.Details.brand == brand)

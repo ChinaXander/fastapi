@@ -12,6 +12,24 @@ import settings
 SQLALCHEY_DATABASE_URI: str = settings.mysql_url
 
 engine = create_engine(SQLALCHEY_DATABASE_URI, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(autocommit=True, bind=engine)
 Base = declarative_base()
-Db = SessionLocal()
+
+
+def connect():
+    try:
+        db = SessionLocal()
+        # this is where the "work" happens!
+        yield db
+        # always commit changes!
+        db.commit()
+    except Exception as e:
+        # if any kind of exception occurs, rollback transaction
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+def Db():
+    return next(connect())
