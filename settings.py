@@ -40,7 +40,8 @@ if not os.path.exists(images_dir):
     os.makedirs(images_dir)
 
 auth = [
-    'eBb5M2IDXhSJIj17EYVdr2cf5YifImKT1'
+    'eBb5M2IDXhSJIj17EYVdr2cf5YifImKT1',
+    '5hQkNUKQW9mJGPSBg9t7XnBPK2TXdIaR'
 ]
 
 doc = {

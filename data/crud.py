@@ -41,6 +41,11 @@ def get_product_details(
             else:
                 value.pdfimage = list()
                 value.pdf_raw = ''
+
+            if value.attributes and type(value.attributes) == str:
+                value.attributes = eval(value.attributes)
+
+
     except Exception as e:
         end_time = datetime.datetime.now()
         logger.error(str(e) + ' [model]==>>' + model + ' [execute] ==>> ' + str(end_time - start_time))
